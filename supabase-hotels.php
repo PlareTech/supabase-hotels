@@ -22,3 +22,33 @@ if (!class_exists('ACF')) {
 
 require_once plugin_dir_path(__FILE__) . 'includes/admin-menu.php';
 require_once plugin_dir_path(__FILE__) . 'includes/supabase-functions.php';
+
+// Register custom query variable
+function custom_query_vars($vars) {
+    $vars[] = 'location';
+    return $vars;
+}
+add_filter('query_vars', 'custom_query_vars');
+
+// Flush rewrite rules on activation/deactivation
+register_activation_hook(__FILE__, 'flush_rewrite_rules');
+register_deactivation_hook(__FILE__, 'flush_rewrite_rules');
+
+// Modify Elementor Query
+function modify_elementor_query($query) {
+    // Get the location parameter from the URL
+    $location = get_query_var('location');
+
+    if ($location) {
+        // Modify the query to get hotels by location
+        $query->set('post_type', 'hotel');
+        $query->set('meta_query', array(
+            array(
+                'key' => 'country',
+                'value' => $location,
+                'compare' => '='
+            )
+        ));
+    }
+}
+add_action('elementor/query/custom_query', 'modify_elementor_query');

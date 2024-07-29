@@ -93,6 +93,7 @@ function import_hotel($hotel, $link) {
         update_field('field_binternet', $hotel['Binternet'], $post_id);
         update_field('field_spa', $hotel['Spa'], $post_id);
         update_field('field_express', $hotel['Express'], $post_id);
+		update_field('field_stars', $hotel['stars'], $post_id);
 
         // Upload images and update fields
         if (!empty($hotel['ImgOne'])) {
@@ -160,16 +161,38 @@ function fetch_hotels_ajax_handler() {
         return;
     }
 
-    ob_start();
-    foreach ($hotels as $hotel) {
-        if (is_array($hotel)) {
-            echo '<div class="hotel">';
-            echo '<h2>' . esc_html($hotel['Name']) . '</h2>';
-            echo '<p>' . esc_html($hotel['Country']) . '</p>';
-            echo '<button class="import-hotel" data-hotel-id="' . esc_attr($hotel['id']) . '">Import</button>';
-            echo '</div>';
-        }
+// Comparison function to sort hotels by country
+function compareByCountry($a, $b) {
+    return strcmp($a['Country'], $b['Country']);
+}
+
+// Sort the hotels array by country
+usort($hotels, 'compareByCountry');
+
+ob_start(); // Start output buffering
+
+foreach ($hotels as $hotel) {
+    if (is_array($hotel)) {
+        ?>
+        <div class="notice notice-info inline" style="position: relative; padding-right: 150px;">
+            <h2><?php echo esc_html($hotel['Name']); ?></h2>
+            <p><?php echo esc_html($hotel['Country']); ?></p>
+            <p><?php echo esc_html($hotel['Desc']); ?></p>
+            <div style="display: flex; margin-bottom: 10px;">
+                <img src="<?php echo esc_html($hotel['ImgOne']); ?>" style="margin-right: 10px; height: 100px;">
+                <img src="<?php echo esc_html($hotel['ImgTwo']); ?>" style="margin-right: 10px; height: 100px;">
+                <img src="<?php echo esc_html($hotel['ImgThree']); ?>" style="margin-right: 10px; height: 100px;">
+                <img src="<?php echo esc_html($hotel['ImgFour']); ?>" style="margin-right: 10px; height: 100px;">
+            </div>
+            <button class="button button-primary import-hotel" style="position: absolute; right: 20px; top: 20px;" data-hotel-id="<?php echo esc_attr($hotel['id']); ?>">
+                <?php esc_html_e('Import', 'text-domain'); ?>
+            </button>
+            <a style="position: absolute; right: 20px; bottom: 10px;"><?php esc_html_e('Copy Long Link', 'text-domain'); ?></a>
+        </div>
+        <?php
     }
-    $content = ob_get_clean();
-    wp_send_json_success($content);
+}
+
+$content = ob_get_clean(); // Get the content from the output buffer
+wp_send_json_success($content);
 }

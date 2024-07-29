@@ -118,6 +118,12 @@ function create_acf_fields() {
                     'name' => 'link',
                     'type' => 'url',
                 ),
+				array(
+                    'key' => 'field_stars',
+                    'label' => 'Stars',
+                    'name' => 'stars',
+                    'type' => 'number',
+                ),
             ),
             'location' => array(
                 array(
@@ -144,10 +150,12 @@ function create_hotel_post_type() {
             'public' => true,
             'has_archive' => true,
             'supports' => array('title', 'editor', 'thumbnail'),
+            'rewrite' => array('slug' => 'hotel'),
         )
     );
 }
 add_action('init', 'create_hotel_post_type');
+
 
 function add_hotel_admin_menu() {
     add_menu_page('Hotels', 'Hotels', 'manage_options', 'hotel_importer', 'hotel_importer_page');
@@ -205,3 +213,40 @@ function enqueue_admin_scripts() {
 }
 
 add_action('admin_enqueue_scripts', 'enqueue_admin_scripts');
+
+
+
+function display_property_amenities() {
+    if (!is_singular('hotel')) {
+        return ''; // Only display on single hotel posts
+    }
+
+    $amenities = array(
+        'wifi' => array('label' => 'Wifi', 'icon' => 'wifi.svg'),
+        'tv' => array('label' => 'TV', 'icon' => 'monitor.svg'),
+        'casino' => array('label' => 'Casino', 'icon' => 'gift.svg'),
+        'library' => array('label' => 'Library', 'icon' => 'book.svg'),
+        'shops' => array('label' => 'Shops', 'icon' => 'shopping-bag.svg'),
+        'pool' => array('label' => 'Pool', 'icon' => 'droplet.svg'), // Choose an appropriate icon
+        'ecar' => array('label' => 'E-Car', 'icon' => 'battery-charging.svg'),
+        'binternet' => array('label' => 'Business Internet', 'icon' => 'briefcase.svg'),
+        'spa' => array('label' => 'Spa', 'icon' => 'heart.svg'), // Choose an appropriate icon
+        'express' => array('label' => 'Express', 'icon' => 'fast-forward.svg'), // Choose an appropriate icon
+        'link' => array('label' => 'Link', 'icon' => 'link.svg')
+    );
+
+    $output = '<ul class="property-amenities">';
+    foreach ($amenities as $field => $info) {
+        $value = get_field($field);
+        if ($value === 'true' || $value === true) {
+            $output .= '<li>';
+            $output .= '<img src="' . plugin_dir_url(__FILE__) . 'icons/' . esc_attr($info['icon']) . '" alt="' . esc_attr($info['label']) . ' icon" class="amenity-icon" style="margin-right:5px;" />';
+            $output .= ' ' . esc_html($info['label']);
+            $output .= '</li>';
+        }
+    }
+    $output .= '</ul>';
+
+    return $output;
+}
+add_shortcode('property_amenities', 'display_property_amenities');
