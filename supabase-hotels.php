@@ -36,11 +36,8 @@ register_deactivation_hook(__FILE__, 'flush_rewrite_rules');
 
 // Modify Elementor Query
 function modify_elementor_query($query) {
-    // Get the location parameter from the URL
     $location = get_query_var('location');
-
     if ($location) {
-        // Modify the query to get hotels by location
         $query->set('post_type', 'hotel');
         $query->set('meta_query', array(
             array(
@@ -52,3 +49,23 @@ function modify_elementor_query($query) {
     }
 }
 add_action('elementor/query/custom_query', 'modify_elementor_query');
+
+// Custom Walker Class for Country Location URLs
+class Country_Location_Walker extends Walker_Nav_Menu {
+    function start_el(&$output, $item, $depth = 0, $args = array(), $id = 0) {
+        if ($item->object == 'country') {
+            $item->url = home_url('/location/?location=' . urlencode($item->title));
+        }
+        parent::start_el($output, $item, $depth, $args, $id);
+    }
+}
+
+// Hook to modify the menu
+function modify_nav_menu_args($args) {
+    if (!is_admin()) {
+        $args['walker'] = new Country_Location_Walker();
+    }
+    return $args;
+}
+
+add_filter('wp_nav_menu_args', 'modify_nav_menu_args');

@@ -140,6 +140,36 @@ function create_acf_fields() {
 
 add_action('acf/init', 'create_acf_fields');
 
+
+function create_country_taxonomy() {
+    $labels = array(
+        'name'              => _x('Countries', 'taxonomy general name', 'textdomain'),
+        'singular_name'     => _x('Country', 'taxonomy singular name', 'textdomain'),
+        'search_items'      => __('Search Countries', 'textdomain'),
+        'all_items'         => __('All Countries', 'textdomain'),
+        'parent_item'       => __('Parent Country', 'textdomain'),
+        'parent_item_colon' => __('Parent Country:', 'textdomain'),
+        'edit_item'         => __('Edit Country', 'textdomain'),
+        'update_item'       => __('Update Country', 'textdomain'),
+        'add_new_item'      => __('Add New Country', 'textdomain'),
+        'new_item_name'     => __('New Country Name', 'textdomain'),
+        'menu_name'         => __('Country', 'textdomain'),
+    );
+
+    $args = array(
+        'hierarchical'      => true,
+        'labels'            => $labels,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'country'),
+    );
+
+    register_taxonomy('country', array('hotel'), $args);
+}
+
+add_action('init', 'create_country_taxonomy', 0);
+
 function create_hotel_post_type() {
     register_post_type('hotel',
         array(
@@ -151,10 +181,27 @@ function create_hotel_post_type() {
             'has_archive' => true,
             'supports' => array('title', 'editor', 'thumbnail'),
             'rewrite' => array('slug' => 'hotel'),
+            'taxonomies' => array('country'), // Add this line to associate the taxonomy
         )
     );
 }
 add_action('init', 'create_hotel_post_type');
+
+function register_country_menu_meta_box() {
+    add_meta_box(
+        'add-country',
+        __('Countries', 'textdomain'),
+        'wp_nav_menu_item_taxonomy_meta_box',
+        'nav-menus',
+        'side',
+        'default',
+        array('taxonomy' => 'country')
+    );
+}
+
+add_action('admin_head-nav-menus.php', 'register_country_menu_meta_box');
+
+
 
 
 function add_hotel_admin_menu() {
