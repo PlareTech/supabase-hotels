@@ -1,5 +1,4 @@
 <?php
-
 function create_acf_fields() {
     if (function_exists('acf_add_local_field_group')) {
         acf_add_local_field_group(array(
@@ -112,13 +111,13 @@ function create_acf_fields() {
                     'name' => 'express',
                     'type' => 'text',
                 ),
-				array(
+                array(
                     'key' => 'field_link',
                     'label' => 'Link',
                     'name' => 'link',
                     'type' => 'url',
                 ),
-				array(
+                array(
                     'key' => 'field_stars',
                     'label' => 'Stars',
                     'name' => 'stars',
@@ -139,7 +138,6 @@ function create_acf_fields() {
 }
 
 add_action('acf/init', 'create_acf_fields');
-
 
 function create_country_taxonomy() {
     $labels = array(
@@ -201,25 +199,60 @@ function register_country_menu_meta_box() {
 
 add_action('admin_head-nav-menus.php', 'register_country_menu_meta_box');
 
-
-
-
 function add_hotel_admin_menu() {
     add_menu_page('Hotels', 'Hotels', 'manage_options', 'hotel_importer', 'hotel_importer_page');
     add_submenu_page('hotel_importer', 'Imported Hotels', 'Imported Hotels', 'manage_options', 'imported_hotels', 'imported_hotels_page');
 }
 add_action('admin_menu', 'add_hotel_admin_menu');
 
+function fetch_supabase_countries() {
+    $supabaseUrl = 'https://owohlvkbxxwzbqixaeov.supabase.co';
+    $supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93b2hsdmtieHh3emJxaXhhZW92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjAzNDU2MjYsImV4cCI6MjAzNTkyMTYyNn0.rDU2SACEt0nBeHPBg5HOgSG2TrGhUBBSzOKkTGlNwYI';
+
+    $response = wp_remote_get("$supabaseUrl/rest/v1/hotels?select=Country", array(
+        'headers' => array(
+            'apikey' => $supabaseKey,
+            'Authorization' => "Bearer $supabaseKey",
+        ),
+    ));
+
+    if (is_wp_error($response)) {
+        error_log('Supabase API error: ' . $response->get_error_message());
+        return array();
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $hotels = json_decode($body, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log('JSON decode error: ' . json_last_error_msg());
+        return array();
+    }
+
+    $countries = array_unique(array_column($hotels, 'Country'));
+    sort($countries);
+
+    return $countries;
+}
+
 function hotel_importer_page() {
+    $countries = fetch_supabase_countries();
     ?>
     <div class="wrap">
         <h1>Supabase Hotels Importer</h1>
+        <select id="country-filter">
+            <option value=""><?php _e('Select Country', 'textdomain'); ?></option>
+            <?php foreach ($countries as $country): ?>
+                <option value="<?php echo esc_attr($country); ?>"><?php echo esc_html($country); ?></option>
+            <?php endforeach; ?>
+        </select>
         <div id="hotel-list">
             <!-- Hotel list will be populated by JavaScript -->
         </div>
     </div>
     <?php
 }
+
 
 function imported_hotels_page() {
     $args = array(
@@ -260,8 +293,6 @@ function enqueue_admin_scripts() {
 }
 
 add_action('admin_enqueue_scripts', 'enqueue_admin_scripts');
-
-
 
 function display_property_amenities() {
     if (!is_singular('hotel')) {

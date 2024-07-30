@@ -1,5 +1,7 @@
 <?php
 
+
+
 function fetch_supabase_hotels() {
     $supabaseUrl = 'https://owohlvkbxxwzbqixaeov.supabase.co';
     $supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93b2hsdmtieHh3emJxaXhhZW92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjAzNDU2MjYsImV4cCI6MjAzNTkyMTYyNn0.rDU2SACEt0nBeHPBg5HOgSG2TrGhUBBSzOKkTGlNwYI';
@@ -169,6 +171,7 @@ add_action('wp_ajax_fetch_hotels', 'fetch_hotels_ajax_handler');
 function fetch_hotels_ajax_handler() {
     check_ajax_referer('import_hotel_nonce', 'nonce');
 
+    $country = isset($_GET['country']) ? sanitize_text_field($_GET['country']) : '';
     $hotels = fetch_supabase_hotels();
 
     if (!is_array($hotels) || empty($hotels)) {
@@ -176,47 +179,52 @@ function fetch_hotels_ajax_handler() {
         return;
     }
 
-// Comparison function to sort hotels by country
-function compareByCountry($a, $b) {
-    return strcmp($a['Country'], $b['Country']);
-}
-
-// Sort the hotels array by country
-usort($hotels, 'compareByCountry');
-
-ob_start(); // Start output buffering
-
-foreach ($hotels as $hotel) {
-    if (is_array($hotel)) {
-        $longLinkText = !empty($hotel['LongLink']) ? 'Copy Long Link' : 'Insert Link';
-        $longLinkData = !empty($hotel['LongLink']) ? esc_url($hotel['LongLink']) : '';
-        ?>
-        <div class="notice notice-info inline" style="position: relative; padding-right: 150px;">
-            <h2><?php echo esc_html($hotel['Name']); ?></h2>
-            <p><?php echo esc_html($hotel['Country']); ?></p>
-            <p><?php echo esc_html($hotel['Desc']); ?></p>
-            <div style="display: flex; margin-bottom: 10px;">
-                <img src="<?php echo esc_html($hotel['ImgOne']); ?>" style="margin-right: 10px; height: 100px;">
-                <img src="<?php echo esc_html($hotel['ImgTwo']); ?>" style="margin-right: 10px; height: 100px;">
-                <img src="<?php echo esc_html($hotel['ImgThree']); ?>" style="margin-right: 10px; height: 100px;">
-                <img src="<?php echo esc_html($hotel['ImgFour']); ?>" style="margin-right: 10px; height: 100px;">
-            </div>
-            <button class="button button-primary import-hotel" style="position: absolute; right: 20px; top: 20px;" data-hotel-id="<?php echo esc_attr($hotel['id']); ?>">
-                <?php esc_html_e('Import', 'text-domain'); ?>
-            </button>
-            <a href="#" class="copy-or-insert-link" data-hotel-id="<?php echo esc_attr($hotel['id']); ?>" data-long-link="<?php echo $longLinkData; ?>" style="position: absolute; right: 20px; bottom: 10px;">
-                <?php esc_html_e($longLinkText, 'text-domain'); ?>
-            </a>
-        </div>
-        <?php
+    if ($country) {
+        $hotels = array_filter($hotels, function($hotel) use ($country) {
+            return $hotel['Country'] === $country;
+        });
     }
+
+    // Comparison function to sort hotels by country
+    function compareByCountry($a, $b) {
+        return strcmp($a['Country'], $b['Country']);
+    }
+
+    // Sort the hotels array by country
+    usort($hotels, 'compareByCountry');
+
+    ob_start(); // Start output buffering
+
+    foreach ($hotels as $hotel) {
+        if (is_array($hotel)) {
+            $longLinkText = !empty($hotel['LongLink']) ? 'Copy Long Link' : 'Insert Link';
+            $longLinkData = !empty($hotel['LongLink']) ? esc_url($hotel['LongLink']) : '';
+            ?>
+            <div class="notice notice-info inline" style="position: relative; padding-right: 150px;">
+                <h2><?php echo esc_html($hotel['Name']); ?></h2>
+                <p><?php echo esc_html($hotel['Country']); ?></p>
+                <p><?php echo esc_html($hotel['Desc']); ?></p>
+                <div style="display: flex; margin-bottom: 10px;">
+                    <img src="<?php echo esc_html($hotel['ImgOne']); ?>" style="margin-right: 10px; height: 100px;">
+                    <img src="<?php echo esc_html($hotel['ImgTwo']); ?>" style="margin-right: 10px; height: 100px;">
+                    <img src="<?php echo esc_html($hotel['ImgThree']); ?>" style="margin-right: 10px; height: 100px;">
+                    <img src="<?php echo esc_html($hotel['ImgFour']); ?>" style="margin-right: 10px; height: 100px;">
+                </div>
+                <button class="button button-primary import-hotel" style="position: absolute; right: 20px; top: 20px;" data-hotel-id="<?php echo esc_attr($hotel['id']); ?>">
+                    <?php esc_html_e('Import', 'text-domain'); ?>
+                </button>
+                <a href="#" class="copy-or-insert-link" data-hotel-id="<?php echo esc_attr($hotel['id']); ?>" data-long-link="<?php echo $longLinkData; ?>" style="position: absolute; right: 20px; bottom: 10px;">
+                    <?php esc_html_e($longLinkText, 'text-domain'); ?>
+                </a>
+            </div>
+            <?php
+        }
+    }
+
+    $content = ob_get_clean(); // Get the content from the output buffer
+    wp_send_json_success($content);
 }
 
-
-
-$content = ob_get_clean(); // Get the content from the output buffer
-wp_send_json_success($content);
-}
 
 function update_long_link_ajax_handler() {
     check_ajax_referer('import_hotel_nonce', 'nonce');

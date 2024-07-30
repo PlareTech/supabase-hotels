@@ -1,4 +1,30 @@
 jQuery(document).ready(function($) {
+    function fetchHotels(country = '') {
+        $.ajax({
+            url: ajaxurl,
+            method: 'GET',
+            data: {
+                action: 'fetch_hotels',
+                nonce: importHotelData.nonce,
+                country: country
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#hotel-list').html(response.data);
+                } else {
+                    $('#hotel-list').html('<p>No hotels found</p>');
+                }
+            }
+        });
+    }
+
+    fetchHotels();
+
+    $('#country-filter').on('change', function() {
+        var country = $(this).val();
+        fetchHotels(country);
+    });
+
     $('#hotel-list').on('click', '.import-hotel', function(e) {
         e.preventDefault();
 
@@ -25,26 +51,6 @@ jQuery(document).ready(function($) {
             });
         }
     });
-
-    function fetchHotels() {
-        $.ajax({
-            url: ajaxurl,
-            method: 'GET',
-            data: {
-                action: 'fetch_hotels',
-                nonce: importHotelData.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#hotel-list').html(response.data);
-                } else {
-                    $('#hotel-list').html('<p>No hotels found</p>');
-                }
-            }
-        });
-    }
-
-    fetchHotels();
 
     // Handle click event for Copy or Insert Link
     $('#hotel-list').on('click', '.copy-or-insert-link', function(e) {
