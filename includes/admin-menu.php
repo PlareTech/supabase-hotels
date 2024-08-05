@@ -160,7 +160,7 @@ function create_country_taxonomy() {
         'show_ui'           => true,
         'show_admin_column' => true,
         'query_var'         => true,
-        'rewrite'           => array('slug' => 'country'),
+        'rewrite'           => array('slug' => 'location'),
     );
 
     register_taxonomy('country', array('hotel'), $args);

@@ -50,22 +50,42 @@ function modify_elementor_query($query) {
 }
 add_action('elementor/query/custom_query', 'modify_elementor_query');
 
-// Custom Walker Class for Country Location URLs
-class Country_Location_Walker extends Walker_Nav_Menu {
-    function start_el(&$output, $item, $depth = 0, $args = array(), $id = 0) {
-        if ($item->object == 'country') {
-            $item->url = home_url('/location/?location=' . urlencode($item->title));
+
+
+
+if (!function_exists('custom_query_vars')) {
+    function custom_query_vars($vars) {
+        $vars[] = 'location';
+        return $vars;
+    }
+    add_filter('query_vars', 'custom_query_vars');
+}
+
+function dynamic_location_title($title_parts) {
+
+        $location = get_query_var('location');
+			 if ($location && $location === 'Las Vegas') {
+            return  '<h1>Casino Hotels in '.esc_html($location).'</h1>';
         }
-        parent::start_el($output, $item, $depth, $args, $id);
-    }
-}
+        elseif ($location) {
+            return  '<h1>'.$title_parts['title'].' '.esc_html($location).'</h1>';
+        }
 
-// Hook to modify the menu
-function modify_nav_menu_args($args) {
-    if (!is_admin()) {
-        $args['walker'] = new Country_Location_Walker();
-    }
-    return $args;
+    
+    return '<h1>Hotel List</h1>';
 }
+add_shortcode('dynamic_location_title', 'dynamic_location_title');
 
-add_filter('wp_nav_menu_args', 'modify_nav_menu_args');
+function dynamic_location_page_title($title_parts) {
+    if (get_query_var('location')) {
+        $location = get_query_var('location');
+		 if ($location && $location === 'Las Vegas') {
+            $title_parts['title'] =  'Casino Hotels in '.esc_html($location);
+        }
+        elseif ($location) {
+            $title_parts['title'] =  $title_parts['title'].' '.esc_html($location);
+        }
+    }
+    return $title_parts;
+}
+add_filter('document_title_parts', 'dynamic_location_page_title');
